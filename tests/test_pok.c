@@ -2,7 +2,7 @@
 #include "test_utils.h"
 #include "utilities.h"
 #include <pok.h>
-#include <printf.h>
+#include <stdio.h>
 
 /*
  * Test cases
@@ -121,7 +121,6 @@ static MunitResult test_canonical_basis_bob(MUNIT_UNUSED const MunitParameter pa
 
     projective_curve_bob_t curve_b;
 
-
     //Seed generation
     uint8_t seed[SECURITY_BITS / 8] = {0};
     RANDOM_SEED(seed)
@@ -142,7 +141,7 @@ static MunitResult test_canonical_basis_bob(MUNIT_UNUSED const MunitParameter pa
     }
     assert_false(quadratic_field_is_square(&t, u));
 
-    x_only_canonical_basis_bob(&P, &Q, &P_minus_Q, u, A);
+    assert_true(x_only_canonical_basis_bob(&P, &Q, &P_minus_Q, u, A) == EXIT_SUCCESS);
 
     simultaneous_three_inverses(&P.Z, &Q.Z, &P_minus_Q.Z);
     quadratic_field_multiplication(&P.X, P.X, P.Z);
@@ -179,12 +178,15 @@ static MunitResult test_canonical_basis_bob(MUNIT_UNUSED const MunitParameter pa
     return MUNIT_OK;
 }
 
+static int iter = 0;
 
-static MunitResult test_canonical_basis(MUNIT_UNUSED const MunitParameter params[],
+static MunitResult test_canonical_basisx(MUNIT_UNUSED const MunitParameter params[],
                                         MUNIT_UNUSED void *user_data_or_fixture) {
     quadratic_field_element_t A, A_prime;
     sidh_private_key_t sk_alice;
     sidh_public_key_t pk_alice, pk = {0}, pk_prime = {0};
+
+    iter++;
 
     //Seed generation
     uint8_t seed[SECURITY_BITS / 8] = {0};
@@ -199,13 +201,16 @@ static MunitResult test_canonical_basis(MUNIT_UNUSED const MunitParameter params
     sidh_get_public_key_from_private_key_alice(&pk_alice, &sk_alice);
     get_curve_from_points(&A, pk_alice.P, pk_alice.Q, pk_alice.P_minus_Q);
 
-    canonical_basis(&pk, A);
+    if (canonical_basis(&pk, A) != EXIT_SUCCESS) {
+        printf("\niteration %i\n",iter);
+        return MUNIT_ERROR;
+    }
     assert_memory_not_equal(sizeof(sidh_public_key_t), &pk_alice, &pk);
 
     get_curve_from_points(&A_prime, pk.P, pk.Q, pk.P_minus_Q);
     assert_memory_equal(sizeof(quadratic_field_element_t), &A, &A_prime);
 
-    canonical_basis(&pk_prime, A);
+    assert_true(canonical_basis(&pk_prime, A) == EXIT_SUCCESS);
     assert_memory_equal(sizeof(sidh_public_key_t), &pk, &pk_prime);
 
     return MUNIT_OK;
@@ -300,7 +305,7 @@ static MunitResult test_two_dimensional_pohlig_hellman(MUNIT_UNUSED const MunitP
     sidh_get_public_key_from_private_key_alice(&pk_alice, &sk_alice);
     get_curve_from_points(&A, pk_alice.P, pk_alice.Q, pk_alice.P_minus_Q);
 
-    canonical_basis(&pk, A);
+    assert_true(canonical_basis(&pk, A) == EXIT_SUCCESS);
     // y-coordinate of P
     // t <- x²
     quadratic_field_square(&t, pk.P);
@@ -487,10 +492,11 @@ MunitTest test_pok[] = {
         TEST_CASE(test_elligator2),
         TEST_CASE(test_is_full_order_bob),
         TEST_CASE(test_canonical_basis_bob),
-        TEST_CASE(test_canonical_basis),
+        TEST_CASE(test_canonical_basisx),
         TEST_CASE(test_two_dimensional_ladder),
         TEST_CASE(test_two_dimensional_pohlig_hellman),
         TEST_CASE(test_random_private_key_sample),
         TEST_CASE(test_sidh_pok),
         TEST_END
 };
+

@@ -98,11 +98,11 @@ void x_only_get_P_minus_Q(x_only_point_t *P_minus_Q,
                           quadratic_field_element_t r,
                           quadratic_field_element_t A);
 
-void x_only_canonical_basis_bob(x_only_point_t *P,
-                                x_only_point_t *Q,
-                                x_only_point_t *P_minus_Q,
-                                quadratic_field_element_t u_prime,
-                                quadratic_field_element_t A);
+uint8_t x_only_canonical_basis_bob(x_only_point_t *P,
+                                   x_only_point_t *Q,
+                                   x_only_point_t *P_minus_Q,
+                                   quadratic_field_element_t u_prime,
+                                   quadratic_field_element_t A);
 
 
 void y_coordinate_recovery_projective(quadratic_field_element_t *yQ,
@@ -138,3 +138,4 @@ uint8_t projective_curve_is_equal_mixed_alice(projective_curve_alice_t input_cur
 uint8_t projective_curve_is_equal_mixed_bob(projective_curve_bob_t input_curve, quadratic_field_element_t input_A);
 
 #endif //SIDH_POK_ELLIPTIC_CURVE_H
+

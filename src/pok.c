@@ -32,7 +32,7 @@ void random_private_key_sample(uint8_t output[SECRET_KEY_BYTES_BOB + 1], keccak_
     }
 }
 
-void canonical_basis(sidh_public_key_t *output_basis, quadratic_field_element_t input_A) {
+uint8_t canonical_basis(sidh_public_key_t *output_basis, quadratic_field_element_t input_A) {
     quadratic_field_element_t u;
     x_only_point_t P, Q, P_minus_Q;
 
@@ -40,12 +40,13 @@ void canonical_basis(sidh_public_key_t *output_basis, quadratic_field_element_t 
     prime_field_set_to_one(u.re);
     prime_field_set_to_one(u.im);
 
-    x_only_canonical_basis_bob(&P, &Q, &P_minus_Q, u, input_A);
+    if(x_only_canonical_basis_bob(&P, &Q, &P_minus_Q, u, input_A) == EXIT_FAILURE) { return EXIT_FAILURE; }
 
     simultaneous_three_inverses(&P.Z, &Q.Z, &P_minus_Q.Z);
     quadratic_field_multiplication(&output_basis->P, P.X, P.Z);
     quadratic_field_multiplication(&output_basis->Q, Q.X, Q.Z);
     quadratic_field_multiplication(&output_basis->P_minus_Q, P_minus_Q.X, P_minus_Q.Z);
+    return EXIT_SUCCESS;
 }
 
 uint8_t decomposition_by_scalars(scalar_t output_c,
@@ -109,11 +110,10 @@ uint8_t decomposition_by_scalars(scalar_t output_c,
     return EXIT_SUCCESS;
 }
 
-
-void sidh_pok_commitment(uint8_t commit[COMMITMENT_BYTES],
-                         uint8_t insight[INSIGHT_BYTES],
-                         const uint8_t private_key_alice[SECRET_KEY_BYTES_ALICE],
-                         keccak_state *state) {
+uint8_t sidh_pok_commitment(uint8_t commit[COMMITMENT_BYTES],
+                            uint8_t insight[INSIGHT_BYTES],
+                            const uint8_t private_key_alice[SECRET_KEY_BYTES_ALICE],
+                            keccak_state *state) {
     sidh_private_key_t private_key, ephemeral_key, ephemeral_key_3;
     x_only_point_t P0, Q0, P0_minus_Q0, // Public points: either {PA, QA, PA-QA} or {PB, QB, PB-QB}
     K_phi, K_psi, K_psi_dual;           // kernel generators
@@ -218,7 +218,7 @@ void sidh_pok_commitment(uint8_t commit[COMMITMENT_BYTES],
     quadratic_field_element_to_bytes(commit, A);
     quadratic_field_element_to_bytes(&insight[2 * QUADRATIC_FIELD_BYTES], A);
     // Looking for P₂, Q₂, and (P₂ - Q₂)
-    canonical_basis(&public_key, A);
+    if(canonical_basis(&public_key, A) == EXIT_FAILURE) { return EXIT_FAILURE; }
     sidh_public_key_to_bytes(&insight[3 * QUADRATIC_FIELD_BYTES], &public_key);
     quadratic_field_copy(&P0.X, public_key.P);
     quadratic_field_set_to_one(&P0.Z);
@@ -238,6 +238,7 @@ void sidh_pok_commitment(uint8_t commit[COMMITMENT_BYTES],
     quadratic_field_multiplication(&public_key.Q, Q0.X, Q0.Z);
     quadratic_field_multiplication(&public_key.P_minus_Q, P0_minus_Q0.X, P0_minus_Q0.Z);
     sidh_public_key_to_bytes(&commit[QUADRATIC_FIELD_BYTES], &public_key);
+    return EXIT_SUCCESS;
 }
 
 void sidh_pok_challenge(uint8_t *challenge, const uint8_t *commitment, uint64_t commitment_size,
@@ -363,3 +364,4 @@ uint8_t sidh_pok_verification(const uint8_t commit[COMMITMENT_BYTES],
     }
     return EXIT_SUCCESS;
 }
+

@@ -30,16 +30,16 @@ uint8_t sidh_signature_sign(uint8_t signature[SIGNATURE_BYTES],
     if (message_length == 0) {
         return EXIT_FAILURE;
     }
-    uint8_t returned_value = 0;
+    uint8_t returned_value = EXIT_SUCCESS;
     uint8_t insights[INSIGHT_BYTES * SECURITY_BITS] = {0};
     uint8_t challenge_bytes[SECURITY_BITS / 8] = {0};
     uint8_t statement[PUBLIC_KEY_BYTES + (SECURITY_BITS / 8)] = {0};
 
     for (uint8_t i = 0; i < SECURITY_BITS / 8; i++) {
         for (uint8_t j = 0; j < 8; j++) {
-            sidh_pok_commitment(&signature[COMMITMENT_BYTES * ((i * 8) + j)],
-                                &insights[INSIGHT_BYTES * ((i * 8) + j)],
-                                private_key, state);
+            returned_value |= sidh_pok_commitment(&signature[COMMITMENT_BYTES * ((i * 8) + j)],
+                                                  &insights[INSIGHT_BYTES * ((i * 8) + j)],
+                                                  private_key, state);
         }
     }
 
@@ -50,9 +50,9 @@ uint8_t sidh_signature_sign(uint8_t signature[SIGNATURE_BYTES],
     for (uint8_t i = 0; i < SECURITY_BITS / 8; i++) {
         for (uint8_t j = 0; j < 8; j++) {
             returned_value |= sidh_pok_response(
-                    &signature[(COMMITMENT_BYTES * SECURITY_BITS) + (RESPONSE_BYTES * ((i * 8) + j))],
-                    &insights[INSIGHT_BYTES * ((i * 8) + j)],
-                    (challenge_bytes[i] >> j) & 1);
+                &signature[(COMMITMENT_BYTES * SECURITY_BITS) + (RESPONSE_BYTES * ((i * 8) + j))],
+                &insights[INSIGHT_BYTES * ((i * 8) + j)],
+                (challenge_bytes[i] >> j) & 1);
         }
     }
 
@@ -87,3 +87,4 @@ uint8_t sidh_signature_verify(const uint8_t signature[SIGNATURE_BYTES],
 
     return returned_value;
 }
+

@@ -1,7 +1,7 @@
 .intel_syntax noprefix
 
 // format function and variable names for mac os x
-#if defined(__apple__)
+#if defined(__APPLE__)
 	#define fmt(f)	_##f
 #else
 	#define fmt(f)	f

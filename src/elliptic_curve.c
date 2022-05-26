@@ -2,8 +2,11 @@
 // Supersingular elliptic curve (Kummer line arithmetic): y² = x³ + Ax² + x
 //
 
-#include <string.h>
 #include "elliptic_curve.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "utilities.h"
 
 void x_only_point_copy(x_only_point_t *output, x_only_point_t input) {
@@ -347,11 +350,11 @@ void x_only_get_P_minus_Q(x_only_point_t *P_minus_Q,
     quadratic_field_multiplication(&P_minus_Q->Z, z, t);    // Z×(X - X')²
 }
 
-void x_only_canonical_basis_bob(x_only_point_t *P,
-                                x_only_point_t *Q,
-                                x_only_point_t *P_minus_Q,
-                                quadratic_field_element_t u_prime,
-                                quadratic_field_element_t A) {
+uint8_t x_only_canonical_basis_bob(x_only_point_t *P,
+                                   x_only_point_t *Q,
+                                   x_only_point_t *P_minus_Q,
+                                   quadratic_field_element_t u_prime,
+                                   quadratic_field_element_t A) {
     uint8_t flag, qr;
     quadratic_field_element_t r_squared, r, u, t;
     x_only_point_t P3, Q3, P3_minus_Q3;
@@ -363,7 +366,7 @@ void x_only_canonical_basis_bob(x_only_point_t *P,
 
     qr = quadratic_field_is_square(&t, A);  // A determines if either QRs or QNRs are required
 
-    for (uint8_t j = 0; j < 32; j++) {
+    for (uint16_t j = 0; j < 128; j++) {
         // +++++++ P
         prime_field_set_to_zero(r.re);
         r.re[0] = TABLE_CANONICAL_BASIS[qr][j];
@@ -383,8 +386,9 @@ void x_only_canonical_basis_bob(x_only_point_t *P,
         if (!x_only_is_full_order_bob(&P3_minus_Q3, P_minus_Q, A)) { continue; }
         // Linear independency check by asking [3ᵇ⁻¹]P ≠ ±[3ᵇ⁻¹]Q
         if (x_only_point_is_equal(P3, Q3)) { continue; }
-        break;
+        return EXIT_SUCCESS;
     }
+    return EXIT_FAILURE;
 }
 
 void y_coordinate_recovery_projective(quadratic_field_element_t *yQ,
@@ -557,3 +561,4 @@ uint8_t projective_curve_is_equal_mixed_bob(projective_curve_bob_t input_curve, 
     quadratic_field_multiplication(&t0, t0, input_A);
     return quadratic_field_is_equal(t0, t1);
 }
+
